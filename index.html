@@ -60,8 +60,13 @@
   .backup{display:flex; gap:10px; justify-content:center; margin-top:10px; flex-wrap:wrap;}
   .backup button{background:var(--panel); border:1px solid var(--line); color:var(--sub);
     font-size:12px; font-weight:700; padding:8px 14px; border-radius:10px;}
-  .ultimo{font-size:14px; font-weight:800; color:var(--ok); background:var(--panel-2);
-    border-radius:8px; padding:6px 10px; display:inline-block; margin-bottom:10px;}
+  .ultimo{font-size:12.5px; font-weight:700; color:var(--accent); margin:2px 0 10px;}
+  .ultimo b{font-weight:800;}
+  .ex-name-btn{display:block; width:100%; text-align:left; background:none; border:none; padding:0;
+    font:inherit; font-size:15px; font-weight:800; color:inherit; margin:0 0 2px; cursor:pointer;}
+  .ex-name-input{display:block; width:100%; font-size:15px; font-weight:800; margin:0 0 2px;
+    background:var(--panel-2); border:1px solid var(--accent); border-radius:6px;
+    color:var(--text); padding:2px 6px; font-family:inherit;}
 
   header.hdr-row{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
   .gear-btn{
@@ -414,6 +419,41 @@ function nomeDoExercicio(exercicioId, exercicios){
   const ex = exercicios.find(e => e.id === exercicioId);
   return ex ? ex.nome : '(exercício removido)';
 }
+function renomearExercicio(exercicioId, novoNome){
+  const exercicios = getExercicios();
+  const ex = exercicios.find(e => e.id === exercicioId);
+  if(ex){
+    ex.nome = novoNome;
+    localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+  }
+}
+
+function editarNomeExercicioInline(botao, exercicioId){
+  const nomeAtual = botao.textContent;
+  let cancelado = false;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = nomeAtual;
+  input.className = 'ex-name-input';
+  botao.replaceWith(input);
+  input.focus();
+  input.select();
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') input.blur();
+    if(e.key === 'Escape'){ cancelado = true; input.blur(); }
+  });
+  input.addEventListener('blur', () => {
+    if(!cancelado){
+      const novoNome = input.value.trim();
+      if(novoNome && novoNome !== nomeAtual){
+        renomearExercicio(exercicioId, novoNome);
+        showToast('Nome atualizado');
+      }
+    }
+    renderCards();
+  });
+}
+
 function garantirExercicioPorNome(nome, exercicios){
   let ex = exercicios.find(e => e.nome === nome);
   if(!ex){
@@ -671,7 +711,7 @@ function renderCards(){
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-      <p class="ex-name">${nome}</p>
+      <button class="ex-name-btn" onclick="editarNomeExercicioInline(this, '${item.exercicioId}')">${nome}</button>
       <p class="ex-scheme">${schemeTxt}</p>
       ${ultimo ? `<div class="ultimo">Último: <b>${ultimo.peso}kg</b> (${formatarData(ultimo.data)})</div>` : ''}
       <div class="row">
