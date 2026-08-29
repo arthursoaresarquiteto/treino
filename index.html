@@ -182,10 +182,6 @@
 
   .vinculo-nota{ font-size:12px; color:var(--sub); margin:-8px 0 14px; }
   .vinculo-nota.novo{ color:var(--ok); }
-  .nome-fixo{
-    background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:12px;
-    font-size:15px; font-weight:800; margin-bottom:4px;
-  }
 
   .stepper-control{ display:flex; align-items:stretch; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
   .stepper-control button{ width:44px; border:none; background:none; color:var(--accent); font-size:19px; font-weight:800; cursor:pointer; }
@@ -992,8 +988,10 @@ function renderSheet(){
       <h2>${sheet.itemId ? 'Editar exercício' : 'Detalhes'}</h2>
       <div class="subtitle">Séries, repetições e descanso para este dia</div>
       <div class="sheet-body">
-        <label style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Exercício</label>
-        <div class="nome-fixo">${sheet.nome}</div>
+        <div class="field-block">
+          <label>Nome do exercício</label>
+          <input type="text" id="input-sheet-nome" value="${sheet.nome}" oninput="sheet.nome=this.value">
+        </div>
         ${vinculoHtml}
 
         <div class="field-block">
@@ -1087,13 +1085,22 @@ function usarRepsMax(){
 }
 
 function salvarSheet(){
+  const nomeFinal = (sheet.nome || '').trim();
+  if(!nomeFinal){ showToast('Digite um nome para o exercício'); return; }
+
   const plano = getPlano();
   const d = plano.dias.find(x=>x.key===diaConfigKey);
   const exercicios = getExercicios();
 
   if(sheet.novoExercicio){
-    sheet.exercicioId = garantirExercicioPorNome(sheet.nome, exercicios);
+    sheet.exercicioId = garantirExercicioPorNome(nomeFinal, exercicios);
     localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+  } else {
+    const ex = exercicios.find(e => e.id === sheet.exercicioId);
+    if(ex && ex.nome !== nomeFinal){
+      ex.nome = nomeFinal;
+      localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+    }
   }
 
   if(sheet.itemId){
