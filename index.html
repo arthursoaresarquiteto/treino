@@ -9,11 +9,15 @@
     --bg:#0b1424;
     --panel:#111c30;
     --panel-2:#16233b;
+    --panel-3:#1b2a47;
     --line:#233252;
     --text:#eef1f6;
     --sub:#8fa0bd;
     --accent:#1e9e6b;
+    --accent-ink:#07140d;
     --ok:#2fbf71;
+    --danger:#e0637d;
+    --scrim:rgba(4,9,20,0.62);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
@@ -25,7 +29,7 @@
   .tabs{display:flex; gap:6px; margin:16px 0 14px; overflow-x:auto;}
   .tab{flex:1; text-align:center; padding:10px 6px; border-radius:10px; background:var(--panel);
     border:1px solid var(--line); font-size:13px; font-weight:700; color:var(--sub); cursor:pointer; white-space:nowrap;}
-  .tab.active{background:var(--accent); color:#07140d; border-color:var(--accent);}
+  .tab.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .datebar{display:flex; align-items:center; justify-content:space-between; background:var(--panel);
     border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px;}
   .datebar input{background:transparent; border:none; color:var(--text); font-size:15px; font-weight:700; font-family:inherit;}
@@ -44,7 +48,7 @@
   .hist b{color:var(--text);}
   .savebar{position:fixed; left:0; right:0; bottom:0; padding:12px 14px calc(14px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, var(--bg) 60%, transparent);}
-  .savebtn{max-width:520px; margin:0 auto; display:block; width:100%; background:var(--accent); color:#07140d;
+  .savebtn{max-width:520px; margin:0 auto; display:block; width:100%; background:var(--accent); color:var(--accent-ink);
     border:none; border-radius:14px; padding:15px; font-size:15px; font-weight:800;}
   .savebtn.saved{background:var(--ok);}
   .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--panel-2);
@@ -58,13 +62,177 @@
     font-size:12px; font-weight:700; padding:8px 14px; border-radius:10px;}
   .ultimo{font-size:14px; font-weight:800; color:var(--ok); background:var(--panel-2);
     border-radius:8px; padding:6px 10px; display:inline-block; margin-bottom:10px;}
+
+  header.hdr-row{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .gear-btn{
+    background:var(--panel); border:1px solid var(--line); color:var(--sub);
+    width:38px; height:38px; border-radius:11px; font-size:16px; cursor:pointer; flex:none; margin-top:2px;
+  }
+
+  header.top{ padding:6px 2px 16px; }
+  .back{
+    display:inline-flex; align-items:center; gap:4px; margin-bottom:14px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:9px;
+    color:var(--accent); font-size:14px; font-weight:700;
+    padding:8px 12px 8px 8px; cursor:pointer;
+  }
+  .back::before{ content:'‹'; font-size:18px; line-height:1; }
+
+  /* ---- Configuração: lista de dias ---- */
+  .day-row{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:12px;
+    transition:opacity .15s;
+  }
+  .day-row.inativo{ opacity:.55; }
+  .toggle{
+    width:46px; height:28px; border-radius:16px; background:var(--panel-3); border:1px solid var(--line);
+    position:relative; flex:none; cursor:pointer; padding:0;
+  }
+  .toggle .knob{
+    position:absolute; top:2px; left:2px; width:22px; height:22px; border-radius:50%;
+    background:var(--sub); transition:transform .18s ease, background .18s ease;
+  }
+  .toggle.on{ background:var(--accent); border-color:var(--accent); }
+  .toggle.on .knob{ transform:translateX(18px); background:var(--accent-ink); }
+
+  .day-main{ flex:1; min-width:0; text-align:left; background:none; border:none; padding:0; color:inherit; font:inherit; }
+  .day-main:disabled{ cursor:default; }
+  .day-name{ font-size:15px; font-weight:800; }
+  .day-sub{ font-size:12.5px; color:var(--sub); margin-top:2px; }
+  .day-sub.set{ color:var(--accent); font-weight:700; }
+  .day-count{ font-size:11px; color:var(--sub); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-top:3px; }
+  .chev{ color:var(--sub); font-size:18px; flex:none; }
+
+  /* ---- Configuração: editor do dia ---- */
+  .field-block{ margin-bottom:16px; }
+  .field-block label{ font-size:11px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:6px; }
+  .field-block input[type=text]{
+    width:100%; background:var(--panel); border:1px solid var(--line); border-radius:11px;
+    color:var(--text); font-size:16px; font-weight:700; padding:12px 12px; font-family:inherit;
+  }
+  .field-block input:focus{ outline:none; border-color:var(--accent); }
+
+  .ex-row{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px;
+  }
+  .reorder{ display:flex; flex-direction:column; gap:3px; flex:none; }
+  .reorder button{
+    width:32px; height:26px; background:var(--panel-2); border:1px solid var(--line); border-radius:7px;
+    color:var(--sub); font-size:13px; line-height:1; cursor:pointer;
+  }
+  .reorder button:disabled{ opacity:.3; }
+  .ex-info{ flex:1; min-width:0; }
+  .ex-info .ex-name{ font-size:14.5px; }
+  .ex-info .ex-scheme{ margin-bottom:0; }
+  .ex-actions{ display:flex; gap:6px; flex:none; }
+  .icon-btn{
+    width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--sub); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn.danger{ color:var(--danger); }
+
+  .add-btn{
+    width:100%; background:var(--panel-2); border:1px dashed var(--line); color:var(--accent);
+    font-size:14px; font-weight:800; padding:14px; border-radius:12px; cursor:pointer; margin-top:4px;
+  }
+  .empty-day{ font-size:13px; color:var(--sub); text-align:center; padding:30px 10px; }
+
+  /* ---- Sheet (adicionar/editar exercício) ---- */
+  .sheet-scrim{
+    position:fixed; inset:0; background:var(--scrim); display:none; z-index:30;
+  }
+  .sheet-scrim.show{ display:block; animation:fade .18s ease; }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; max-height:88%; max-width:520px; margin:0 auto; background:var(--panel);
+    border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:10px 18px calc(20px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; transform:translateY(100%); transition:transform .25s ease;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.6);
+  }
+  .sheet-scrim.show .sheet{ transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .sheet{ transition:none; } }
+  .grabber{ width:36px; height:4px; background:var(--line); border-radius:3px; margin:2px auto 12px; }
+  .sheet h2{ font-size:16px; margin:0 0 2px; font-weight:800; }
+  .sheet .subtitle{ margin-bottom:14px; }
+  .sheet-body{ overflow-y:auto; }
+
+  .search input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:11px;
+    color:var(--text); font-size:15px; padding:11px 12px; font-family:inherit; margin-bottom:10px;
+  }
+  .search input:focus{ outline:none; border-color:var(--accent); }
+  .catalogo-list{ display:flex; flex-direction:column; gap:6px; }
+  .cat-item{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:12px 14px;
+    font-size:14.5px; font-weight:700; cursor:pointer; text-align:left; color:var(--text);
+  }
+  .cat-item:active{ border-color:var(--accent); }
+  .cat-new{
+    background:var(--panel-2); border:1px dashed var(--accent); color:var(--accent);
+    border-radius:11px; padding:12px 14px; font-size:14px; font-weight:800; cursor:pointer; text-align:left; margin-bottom:10px;
+  }
+  .cat-empty{ font-size:13px; color:var(--sub); text-align:center; padding:18px 0; }
+
+  .vinculo-nota{ font-size:12px; color:var(--sub); margin:-8px 0 14px; }
+  .vinculo-nota.novo{ color:var(--ok); }
+  .nome-fixo{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:12px;
+    font-size:15px; font-weight:800; margin-bottom:4px;
+  }
+
+  .stepper-control{ display:flex; align-items:stretch; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .stepper-control button{ width:44px; border:none; background:none; color:var(--accent); font-size:19px; font-weight:800; cursor:pointer; }
+  .stepper-control input{
+    flex:1; min-width:0; text-align:center; background:none; border:none; color:var(--text);
+    font-size:16px; font-weight:800; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .stepper-control input:focus{ outline:none; }
+  .reps-max-link{
+    background:none; border:none; color:var(--accent); font-size:11.5px; font-weight:700;
+    padding:6px 0 0; cursor:pointer; text-decoration:underline;
+  }
+
+  .sheet-actions{ display:flex; gap:10px; margin-top:18px; }
+  .btn{ flex:1; padding:14px; border-radius:12px; font-size:14.5px; font-weight:800; border:none; cursor:pointer; }
+  .btn-primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn-secondary{ background:var(--panel-2); color:var(--sub); border:1px solid var(--line); }
+  .btn-danger{ background:var(--danger); color:#2b0410; }
+
+  /* ---- Modal de confirmação ---- */
+  .confirm-scrim{
+    position:fixed; inset:0; background:var(--scrim); display:none;
+    align-items:center; justify-content:center; padding:24px; z-index:40;
+  }
+  .confirm-scrim.show{ display:flex; animation:fade .15s ease; }
+  .confirm-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:20px; width:100%; max-width:320px;
+  }
+  .confirm-card p{ font-size:14.5px; font-weight:600; line-height:1.5; margin:0 0 18px; }
+
+  /* ---- Cores personalizadas ---- */
+  .color-row{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .color-row label{ font-size:14px; font-weight:700; }
+  .color-row input[type=color]{
+    width:56px; height:40px; border:1px solid var(--line); border-radius:9px; background:var(--panel-2);
+    padding:2px; cursor:pointer;
+  }
+  .aviso-contraste{ font-size:12.5px; color:var(--danger); padding:4px 2px 10px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="kicker">Log de treino</div>
-    <h1 id="dayTitle">Segunda</h1>
+<div class="wrap" id="tela-treino">
+  <header class="hdr-row">
+    <div>
+      <div class="kicker">Log de treino</div>
+      <h1 id="dayTitle">Segunda</h1>
+    </div>
+    <button class="gear-btn" aria-label="Configurar treino" onclick="abrirConfiguracao()">⚙</button>
   </header>
 
   <div class="tabs" id="tabs"></div>
@@ -89,7 +257,76 @@
   </div>
 </div>
 
-<div class="savebar">
+<div class="wrap" id="tela-config-dias" style="display:none">
+  <header class="top">
+    <button class="back" onclick="voltarParaTreino()">Treino</button>
+    <div class="kicker">Configuração</div>
+    <h1>Seu treino</h1>
+    <div class="subtitle">Ative os dias que têm treino e dê um nome pra cada um</div>
+  </header>
+  <div id="lista-dias-config"></div>
+  <div class="reset" style="margin-top:20px;">
+    <button onclick="abrirCores()">🎨 Personalizar cores</button>
+  </div>
+</div>
+
+<div class="wrap" id="tela-config-dia" style="display:none">
+  <header class="top">
+    <button class="back" onclick="voltarParaConfigDias()">Configuração</button>
+    <div class="kicker" id="cfg-dia-kicker">Segunda-feira</div>
+    <h1 id="cfg-dia-titulo">Segunda</h1>
+  </header>
+  <div class="field-block">
+    <label>Nome do treino</label>
+    <input type="text" id="input-nome-dia" placeholder="ex: Costas e Bíceps" oninput="onNomeDiaChange(this.value)">
+  </div>
+  <div id="lista-exercicios-config"></div>
+  <button class="add-btn" onclick="abrirSheetNovo()">+ Adicionar exercício</button>
+</div>
+
+<div class="wrap" id="tela-cores" style="display:none">
+  <header class="top">
+    <button class="back" onclick="mostrarTela('tela-config-dias')">Configuração</button>
+    <div class="kicker">Aparência</div>
+    <h1>Cores do app</h1>
+    <div class="subtitle">Escolha 3 cores; o resto se ajusta sozinho para continuar legível</div>
+  </header>
+
+  <div class="color-row">
+    <label>Fundo</label>
+    <input type="color" id="cor-fundo" oninput="onCorChange()">
+  </div>
+  <div class="color-row">
+    <label>Destaque (botões)</label>
+    <input type="color" id="cor-destaque" oninput="onCorChange()">
+  </div>
+  <div class="color-row">
+    <label>Texto</label>
+    <input type="color" id="cor-texto" oninput="onCorChange()">
+  </div>
+  <div class="aviso-contraste" id="aviso-contraste" style="display:none;"></div>
+
+  <button class="add-btn" onclick="restaurarCoresPadrao()" style="margin-top:10px;">Restaurar padrão</button>
+</div>
+
+<div class="sheet-scrim" id="sheet-scrim">
+  <div class="sheet" id="sheet">
+    <div class="grabber"></div>
+    <div id="sheet-conteudo"></div>
+  </div>
+</div>
+
+<div class="confirm-scrim" id="confirm-scrim">
+  <div class="confirm-card">
+    <p id="confirm-msg"></p>
+    <div class="sheet-actions" style="margin-top:0;">
+      <button class="btn btn-secondary" onclick="fecharConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="savebar" id="savebar">
   <button class="savebtn" id="saveBtn" onclick="saveSession()">Salvar treino de hoje</button>
 </div>
 
@@ -97,6 +334,18 @@
 
 <script>
 const STORAGE_KEYS = { exercicios:'treino_exercicios', plano:'treino_plano', logs:'treino_logs', migrado:'treino_migrado_v2' };
+const STORAGE_CORES = 'treino_cores';
+
+const ORDEM_DIAS = [
+  { key:'dom', label:'Domingo' }, { key:'seg', label:'Segunda' }, { key:'ter', label:'Terça' },
+  { key:'qua', label:'Quarta' }, { key:'qui', label:'Quinta' }, { key:'sex', label:'Sexta' }, { key:'sab', label:'Sábado' }
+];
+
+const CORES_PADRAO = { fundo:'#0b1424', destaque:'#1e9e6b', texto:'#eef1f6' };
+const TOKENS_PADRAO = {
+  bg:'#0b1424', panel:'#111c30', 'panel-2':'#16233b', 'panel-3':'#1b2a47', line:'#233252',
+  text:'#eef1f6', sub:'#8fa0bd', accent:'#1e9e6b', 'accent-ink':'#07140d', ok:'#2fbf71', danger:'#e0637d'
+};
 
 // Usado só como ponto de partida da migração automática (Etapa 2a). Depois da
 // migração, a fonte de verdade passa a ser STORAGE_KEYS.plano/.exercicios no localStorage.
@@ -179,6 +428,171 @@ function parseScheme(scheme){
   return { series: parseInt(m[1],10), reps: m[2].trim(), descanso:null };
 }
 
+function diasAtivos(){
+  return getPlano().dias.filter(d => d.ativo);
+}
+
+function salvarPlano(plano){
+  localStorage.setItem(STORAGE_KEYS.plano, JSON.stringify(plano));
+}
+
+function garantirPlanoAtualizado(){
+  const plano = getPlano();
+  const existentes = {};
+  (plano.dias || []).forEach(d => { existentes[d.key] = d; });
+  let mudou = (plano.dias || []).length !== ORDEM_DIAS.length;
+
+  const dias = ORDEM_DIAS.map(({key,label}) => {
+    const atual = existentes[key];
+    if(!atual){
+      mudou = true;
+      return { key, label, ativo:false, nome:'', exercicios:[] };
+    }
+    if(atual.ativo === undefined) mudou = true;
+    const exercicios = (atual.exercicios || []).map(item => {
+      if(!item.itemId){ mudou = true; return { ...item, itemId: generateId() }; }
+      return item;
+    });
+    return {
+      key, label,
+      ativo: atual.ativo !== undefined ? atual.ativo : true,
+      nome: atual.nome || '',
+      exercicios
+    };
+  });
+
+  if(mudou) salvarPlano({ dias });
+}
+
+/* ---------- Cores personalizadas ---------- */
+function hexParaRgb(hex){
+  const n = parseInt(hex.replace('#',''), 16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+function rgbParaHex(r,g,b){
+  return '#' + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+}
+function hexParaHsl(hex){
+  const { r:r0, g:g0, b:b0 } = hexParaRgb(hex);
+  const r=r0/255, g=g0/255, b=b0/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0, s=0; const l=(max+min)/2;
+  if(max !== min){
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      default: h=(r-g)/d+4;
+    }
+    h*=60;
+  }
+  return { h, s:s*100, l:l*100 };
+}
+function hslParaHex(h,s,l){
+  s/=100; l/=100;
+  const c=(1-Math.abs(2*l-1))*s;
+  const x=c*(1-Math.abs((h/60)%2-1));
+  const m=l-c/2;
+  let r,g,b;
+  if(h<60){r=c;g=x;b=0;} else if(h<120){r=x;g=c;b=0;} else if(h<180){r=0;g=c;b=x;}
+  else if(h<240){r=0;g=x;b=c;} else if(h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+  return rgbParaHex((r+m)*255,(g+m)*255,(b+m)*255);
+}
+function ajustarLuminosidade(hex, delta){
+  const {h,s,l} = hexParaHsl(hex);
+  const dir = l > 50 ? -1 : 1;
+  return hslParaHex(h, s, Math.max(0, Math.min(100, l + delta*dir)));
+}
+function misturarCores(hexA, hexB, pesoA){
+  const a = hexParaRgb(hexA), b = hexParaRgb(hexB);
+  return rgbParaHex(
+    a.r*pesoA + b.r*(1-pesoA),
+    a.g*pesoA + b.g*(1-pesoA),
+    a.b*pesoA + b.b*(1-pesoA)
+  );
+}
+function luminanciaAprox(hex){
+  const {r,g,b} = hexParaRgb(hex);
+  return (0.299*r + 0.587*g + 0.114*b) / 255;
+}
+
+function tokensDerivados(cores){
+  const fundoClaro = hexParaHsl(cores.fundo).l > 50;
+  return {
+    bg: cores.fundo,
+    text: cores.texto,
+    accent: cores.destaque,
+    panel: ajustarLuminosidade(cores.fundo, 6),
+    'panel-2': ajustarLuminosidade(cores.fundo, 11),
+    'panel-3': ajustarLuminosidade(cores.fundo, 14),
+    line: ajustarLuminosidade(cores.fundo, 18),
+    sub: misturarCores(cores.texto, cores.fundo, 0.55),
+    'accent-ink': luminanciaAprox(cores.destaque) > 0.55 ? '#0a0a0a' : '#f5f5f5',
+    ok: fundoClaro ? '#1a8f57' : '#2fbf71',
+    danger: fundoClaro ? '#c23558' : '#e0637d'
+  };
+}
+
+function aplicarTokens(tokens){
+  const root = document.documentElement.style;
+  Object.keys(tokens).forEach(k => root.setProperty('--'+k, tokens[k]));
+}
+
+function getCores(){
+  try{
+    const salvo = JSON.parse(localStorage.getItem(STORAGE_CORES));
+    return salvo ? { ...CORES_PADRAO, ...salvo } : null;
+  }catch(e){ return null; }
+}
+
+function aplicarCoresAtuais(){
+  const cores = getCores();
+  aplicarTokens(cores ? tokensDerivados(cores) : TOKENS_PADRAO);
+}
+
+function carregarCoresNaTela(){
+  const cores = getCores() || CORES_PADRAO;
+  document.getElementById('cor-fundo').value = cores.fundo;
+  document.getElementById('cor-destaque').value = cores.destaque;
+  document.getElementById('cor-texto').value = cores.texto;
+  atualizarAvisoContraste(cores);
+}
+
+function atualizarAvisoContraste(cores){
+  const aviso = document.getElementById('aviso-contraste');
+  const diff = Math.abs(luminanciaAprox(cores.texto) - luminanciaAprox(cores.fundo));
+  if(diff < 0.35){
+    aviso.style.display = '';
+    aviso.textContent = 'Contraste baixo entre texto e fundo — pode ficar difícil de ler.';
+  } else {
+    aviso.style.display = 'none';
+  }
+}
+
+function onCorChange(){
+  const cores = {
+    fundo: document.getElementById('cor-fundo').value,
+    destaque: document.getElementById('cor-destaque').value,
+    texto: document.getElementById('cor-texto').value
+  };
+  localStorage.setItem(STORAGE_CORES, JSON.stringify(cores));
+  aplicarTokens(tokensDerivados(cores));
+  atualizarAvisoContraste(cores);
+}
+
+function restaurarCoresPadrao(){
+  localStorage.removeItem(STORAGE_CORES);
+  aplicarTokens(TOKENS_PADRAO);
+  carregarCoresNaTela();
+  showToast('Cores restauradas');
+}
+
+function abrirCores(){
+  mostrarTela('tela-cores');
+  carregarCoresNaTela();
+}
+
 function migrarDadosAntigos(){
   if(localStorage.getItem(STORAGE_KEYS.migrado)) return;
 
@@ -217,32 +631,32 @@ function migrarDadosAntigos(){
 }
 
 function renderTabs(){
-  const plano = getPlano();
+  const dias = diasAtivos();
   const tabs = document.getElementById('tabs');
   tabs.innerHTML = '';
-  plano.dias.forEach((d,i)=>{
+  dias.forEach((d,i)=>{
     const el = document.createElement('div');
     el.className = 'tab' + (i===currentDayIdx ? ' active' : '');
-    el.textContent = d.label;
+    el.textContent = d.nome || d.label;
     el.onclick = ()=>{ currentDayIdx = i; init(); };
     tabs.appendChild(el);
   });
 }
 
 function renderCards(){
-  const plano = getPlano();
+  const dias = diasAtivos();
   const exercicios = getExercicios();
   const logs = getLogs();
-  const day = plano.dias[currentDayIdx];
+  const day = dias[currentDayIdx];
   const container = document.getElementById('cards');
 
   if(!day){
-    document.getElementById('dayTitle').textContent = '—';
-    container.innerHTML = '<div class="empty">Nenhum dia configurado.</div>';
+    document.getElementById('dayTitle').textContent = 'Nenhum treino configurado';
+    container.innerHTML = '<div class="empty">Toque em ⚙ para configurar seus dias de treino.</div>';
     return;
   }
 
-  document.getElementById('dayTitle').textContent = day.label;
+  document.getElementById('dayTitle').textContent = day.nome || day.label;
   container.innerHTML = '';
 
   day.exercicios.forEach((item, idx)=>{
@@ -279,8 +693,7 @@ function renderCards(){
 }
 
 function loadExistingForDate(){
-  const plano = getPlano();
-  const day = plano.dias[currentDayIdx];
+  const day = diasAtivos()[currentDayIdx];
   if(!day) return;
   const date = document.getElementById('dateInput').value;
   const logs = getLogs();
@@ -294,8 +707,7 @@ function loadExistingForDate(){
 }
 
 function saveSession(){
-  const plano = getPlano();
-  const day = plano.dias[currentDayIdx];
+  const day = diasAtivos()[currentDayIdx];
   const date = document.getElementById('dateInput').value;
   if(!date){ showToast('Escolha uma data primeiro'); return; }
   if(!day) return;
@@ -324,13 +736,337 @@ function saveSession(){
 }
 
 function resetDay(){
-  const plano = getPlano();
-  const day = plano.dias[currentDayIdx];
+  const day = diasAtivos()[currentDayIdx];
   if(!day) return;
   day.exercicios.forEach((item, idx)=>{
     document.getElementById(`peso_${idx}`).value = '';
     document.getElementById(`reps_${idx}`).value = '';
   });
+}
+
+/* ---------- Navegação entre telas ---------- */
+let diaConfigKey = null;
+let sheet = null;
+
+function mostrarTela(id){
+  ['tela-treino','tela-config-dias','tela-config-dia','tela-cores'].forEach(t=>{
+    document.getElementById(t).style.display = (t===id) ? '' : 'none';
+  });
+  document.getElementById('savebar').style.display = (id==='tela-treino') ? '' : 'none';
+}
+
+function abrirConfiguracao(){
+  mostrarTela('tela-config-dias');
+  renderConfigDias();
+}
+
+function voltarParaTreino(){
+  mostrarTela('tela-treino');
+  currentDayIdx = Math.min(currentDayIdx, Math.max(0, diasAtivos().length - 1));
+  init();
+}
+
+function abrirConfigDia(key){
+  diaConfigKey = key;
+  mostrarTela('tela-config-dia');
+  renderConfigDia();
+}
+
+function voltarParaConfigDias(){
+  mostrarTela('tela-config-dias');
+  renderConfigDias();
+}
+
+/* ---------- Configuração: lista de dias ---------- */
+function renderConfigDias(){
+  const plano = getPlano();
+  const lista = document.getElementById('lista-dias-config');
+  lista.innerHTML = '';
+  plano.dias.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'day-row' + (d.ativo ? '' : ' inativo');
+    row.innerHTML = `
+      <button class="toggle ${d.ativo?'on':''}" aria-label="Ativar ${d.label}" onclick="toggleDiaConfig('${d.key}')"><span class="knob"></span></button>
+      <button class="day-main" ${d.ativo ? `onclick="abrirConfigDia('${d.key}')"` : 'disabled'}>
+        <div class="day-name">${d.label}</div>
+        <div class="day-sub ${d.ativo && d.nome ? 'set' : ''}">${d.ativo ? (d.nome || 'Toque para nomear') : 'Sem treino'}</div>
+        ${d.ativo ? `<div class="day-count">${d.exercicios.length} exercício${d.exercicios.length===1?'':'s'}</div>` : ''}
+      </button>
+      ${d.ativo ? '<div class="chev">›</div>' : ''}
+    `;
+    lista.appendChild(row);
+  });
+}
+
+function toggleDiaConfig(key){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===key);
+  d.ativo = !d.ativo;
+  salvarPlano(plano);
+  renderConfigDias();
+}
+
+/* ---------- Configuração: editor do dia ---------- */
+function schemeTextoConfig(item){
+  let txt = `${item.series}x ${item.reps}`;
+  if(item.descanso) txt += ` · descanso ${item.descanso}s`;
+  return txt;
+}
+
+function onNomeDiaChange(v){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  d.nome = v;
+  salvarPlano(plano);
+  document.getElementById('cfg-dia-titulo').textContent = v || d.label;
+}
+
+function renderConfigDia(){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  document.getElementById('cfg-dia-kicker').textContent = d.label + '-feira';
+  document.getElementById('cfg-dia-titulo').textContent = d.nome || d.label;
+  document.getElementById('input-nome-dia').value = d.nome;
+
+  const exercicios = getExercicios();
+  const lista = document.getElementById('lista-exercicios-config');
+  lista.innerHTML = '';
+
+  if(d.exercicios.length === 0){
+    lista.innerHTML = '<div class="empty-day">Nenhum exercício ainda. Toque em "Adicionar exercício" abaixo.</div>';
+    return;
+  }
+
+  d.exercicios.forEach((item, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'ex-row';
+    row.innerHTML = `
+      <div class="reorder">
+        <button ${idx===0?'disabled':''} onclick="moverExercicioConfig('${item.itemId}',-1)">▲</button>
+        <button ${idx===d.exercicios.length-1?'disabled':''} onclick="moverExercicioConfig('${item.itemId}',1)">▼</button>
+      </div>
+      <div class="ex-info">
+        <div class="ex-name">${nomeDoExercicio(item.exercicioId, exercicios)}</div>
+        <div class="ex-scheme">${schemeTextoConfig(item)}</div>
+      </div>
+      <div class="ex-actions">
+        <button class="icon-btn" aria-label="Editar" onclick="abrirSheetEditar('${item.itemId}')">✎</button>
+        <button class="icon-btn danger" aria-label="Remover" onclick="removerExercicioConfig('${item.itemId}')">✕</button>
+      </div>
+    `;
+    lista.appendChild(row);
+  });
+}
+
+function moverExercicioConfig(itemId, dir){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  const i = d.exercicios.findIndex(x=>x.itemId===itemId);
+  const j = i + dir;
+  if(j < 0 || j >= d.exercicios.length) return;
+  [d.exercicios[i], d.exercicios[j]] = [d.exercicios[j], d.exercicios[i]];
+  salvarPlano(plano);
+  renderConfigDia();
+}
+
+function removerExercicioConfig(itemId){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  const nome = nomeDoExercicio(d.exercicios.find(x=>x.itemId===itemId).exercicioId, getExercicios());
+  pedirConfirmacao(`Excluir "${nome}" deste dia? O histórico dele não é apagado.`, () => {
+    d.exercicios = d.exercicios.filter(x=>x.itemId!==itemId);
+    salvarPlano(plano);
+    renderConfigDia();
+    showToast('Exercício removido do dia');
+  });
+}
+
+/* ---------- Modal de confirmação ---------- */
+let confirmCallback = null;
+function pedirConfirmacao(mensagem, aoConfirmar){
+  document.getElementById('confirm-msg').textContent = mensagem;
+  confirmCallback = aoConfirmar;
+  document.getElementById('confirm-scrim').classList.add('show');
+}
+function fecharConfirm(){
+  document.getElementById('confirm-scrim').classList.remove('show');
+  confirmCallback = null;
+}
+
+/* ---------- Sheet: adicionar/editar exercício ---------- */
+function abrirSheetNovo(){
+  sheet = { passo:'escolher', itemId:null, exercicioId:null, nome:'', series:3, reps:'10', descanso:60, novoExercicio:false };
+  document.getElementById('sheet-scrim').classList.add('show');
+  renderSheet();
+}
+
+function abrirSheetEditar(itemId){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  const item = d.exercicios.find(x=>x.itemId===itemId);
+  sheet = { passo:'detalhes', itemId, exercicioId:item.exercicioId, nome:nomeDoExercicio(item.exercicioId, getExercicios()),
+            series:item.series, reps:item.reps, descanso:item.descanso, novoExercicio:false };
+  document.getElementById('sheet-scrim').classList.add('show');
+  renderSheet();
+}
+
+function fecharSheet(){
+  document.getElementById('sheet-scrim').classList.remove('show');
+  sheet = null;
+}
+
+function renderSheet(){
+  const el = document.getElementById('sheet-conteudo');
+  if(sheet.passo === 'escolher'){
+    el.innerHTML = `
+      <h2>Adicionar exercício</h2>
+      <div class="subtitle">Escolha um já existente ou crie um novo</div>
+      <div class="sheet-body">
+        <div class="search"><input type="text" id="busca-exercicio" placeholder="Buscar exercício..." oninput="filtrarCatalogo(this.value)"></div>
+        <button class="cat-new" onclick="irParaNovoNome()">+ Criar novo exercício</button>
+        <div class="catalogo-list" id="catalogo-list"></div>
+      </div>
+    `;
+    renderCatalogo('');
+  } else if(sheet.passo === 'novo-nome'){
+    el.innerHTML = `
+      <h2>Novo exercício</h2>
+      <div class="subtitle">Como ele deve aparecer no catálogo?</div>
+      <div class="sheet-body">
+        <div class="field-block">
+          <label>Nome do exercício</label>
+          <input type="text" id="input-novo-nome" value="${sheet.nomeSugerido || ''}" placeholder="ex: Supino reto barra">
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" onclick="fecharSheet()">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarNovoNome()">Continuar</button>
+      </div>
+    `;
+    document.getElementById('input-novo-nome').focus();
+  } else {
+    const vinculoHtml = sheet.novoExercicio
+      ? `<div class="vinculo-nota novo">Exercício novo — ainda sem histórico.</div>`
+      : `<div class="vinculo-nota">Vinculado ao histórico existente deste exercício.</div>`;
+    el.innerHTML = `
+      <h2>${sheet.itemId ? 'Editar exercício' : 'Detalhes'}</h2>
+      <div class="subtitle">Séries, repetições e descanso para este dia</div>
+      <div class="sheet-body">
+        <label style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Exercício</label>
+        <div class="nome-fixo">${sheet.nome}</div>
+        ${vinculoHtml}
+
+        <div class="field-block">
+          <label>Séries</label>
+          <div class="stepper-control">
+            <button onclick="ajustarSeries(-1)">−</button>
+            <input type="text" inputmode="numeric" id="input-series" value="${sheet.series}" readonly>
+            <button onclick="ajustarSeries(1)">+</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label>Repetições</label>
+          <div class="stepper-control">
+            <button onclick="ajustarReps(-1)">−</button>
+            <input type="text" inputmode="numeric" id="input-reps" value="${sheet.reps}" readonly>
+            <button onclick="ajustarReps(1)">+</button>
+          </div>
+          <button class="reps-max-link" onclick="usarRepsMax()">${sheet.reps === 'máx' ? 'Usar um número' : 'Usar "máx" (até a falha)'}</button>
+        </div>
+
+        <div class="field-block" style="margin-bottom:6px;">
+          <label>Descanso</label>
+          <div class="stepper-control">
+            <button onclick="ajustarDescanso(-15)">−</button>
+            <input type="text" inputmode="numeric" id="input-descanso" value="${sheet.descanso}s" readonly>
+            <button onclick="ajustarDescanso(15)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" onclick="fecharSheet()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarSheet()">Salvar</button>
+      </div>
+    `;
+  }
+}
+
+function filtrarCatalogo(termo){ renderCatalogo(termo); }
+
+function renderCatalogo(termo){
+  const list = document.getElementById('catalogo-list');
+  const t = termo.trim().toLowerCase();
+  const resultados = getExercicios().filter(e => e.nome.toLowerCase().includes(t));
+  if(resultados.length === 0){
+    list.innerHTML = '<div class="cat-empty">Nenhum exercício encontrado no catálogo.</div>';
+    return;
+  }
+  list.innerHTML = resultados.map(e =>
+    `<button class="cat-item" onclick="escolherDoCatalogo('${e.id}')">${e.nome}</button>`
+  ).join('');
+}
+
+function escolherDoCatalogo(exercicioId){
+  const ex = getExercicios().find(e=>e.id===exercicioId);
+  sheet = { ...sheet, passo:'detalhes', exercicioId:ex.id, nome:ex.nome, novoExercicio:false, series:3, reps:'10', descanso:60 };
+  renderSheet();
+}
+
+function irParaNovoNome(){
+  const busca = document.getElementById('busca-exercicio');
+  const nomeSugerido = (busca && busca.value.trim()) || '';
+  sheet = { ...sheet, passo:'novo-nome', nomeSugerido };
+  renderSheet();
+}
+
+function confirmarNovoNome(){
+  const nome = document.getElementById('input-novo-nome').value.trim();
+  if(!nome){ showToast('Digite um nome para o exercício'); return; }
+  sheet = { ...sheet, passo:'detalhes', exercicioId:null, nome, novoExercicio:true, series:3, reps:'10', descanso:60 };
+  renderSheet();
+}
+
+function ajustarSeries(delta){
+  sheet.series = Math.max(1, sheet.series + delta);
+  document.getElementById('input-series').value = sheet.series;
+}
+function ajustarDescanso(delta){
+  sheet.descanso = Math.max(0, sheet.descanso + delta);
+  document.getElementById('input-descanso').value = sheet.descanso + 's';
+}
+function ajustarReps(delta){
+  let atual = parseInt(sheet.reps, 10);
+  if(isNaN(atual)) atual = 8;
+  sheet.reps = String(Math.max(1, atual + delta));
+  renderSheet();
+}
+function usarRepsMax(){
+  sheet.reps = sheet.reps === 'máx' ? '8' : 'máx';
+  renderSheet();
+}
+
+function salvarSheet(){
+  const plano = getPlano();
+  const d = plano.dias.find(x=>x.key===diaConfigKey);
+  const exercicios = getExercicios();
+
+  if(sheet.novoExercicio){
+    sheet.exercicioId = garantirExercicioPorNome(sheet.nome, exercicios);
+    localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+  }
+
+  if(sheet.itemId){
+    const item = d.exercicios.find(x=>x.itemId===sheet.itemId);
+    item.series = sheet.series; item.reps = sheet.reps; item.descanso = sheet.descanso;
+  } else {
+    d.exercicios.push({ itemId:generateId(), exercicioId:sheet.exercicioId, series:sheet.series, reps:sheet.reps, descanso:sheet.descanso });
+  }
+
+  salvarPlano(plano);
+  fecharSheet();
+  renderConfigDia();
+  showToast('Exercício salvo');
 }
 
 function exportData(){
@@ -428,7 +1164,14 @@ function init(){
   renderCards();
 }
 
+aplicarCoresAtuais();
 migrarDadosAntigos();
+garantirPlanoAtualizado();
+document.getElementById('confirm-ok-btn').onclick = () => {
+  const cb = confirmCallback;
+  fecharConfirm();
+  if(cb) cb();
+};
 document.getElementById('dateInput').value = todayISO();
 document.getElementById('dateInput').addEventListener('change', loadExistingForDate);
 init();
