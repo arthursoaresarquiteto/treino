@@ -56,6 +56,8 @@
   .backup{display:flex; gap:10px; justify-content:center; margin-top:10px; flex-wrap:wrap;}
   .backup button{background:var(--panel); border:1px solid var(--line); color:var(--sub);
     font-size:12px; font-weight:700; padding:8px 14px; border-radius:10px;}
+  .ultimo{font-size:14px; font-weight:800; color:var(--ok); background:var(--panel-2);
+    border-radius:8px; padding:6px 10px; display:inline-block; margin-bottom:10px;}
 </style>
 </head>
 <body>
@@ -94,7 +96,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const DAYS = [
+const STORAGE_KEYS = { exercicios:'treino_exercicios', plano:'treino_plano', logs:'treino_logs', migrado:'treino_migrado_v2' };
+
+// Usado só como ponto de partida da migração automática (Etapa 2a). Depois da
+// migração, a fonte de verdade passa a ser STORAGE_KEYS.plano/.exercicios no localStorage.
+const DIAS_SEED_MIGRACAO = [
   { key:'seg', label:'Segunda', exercises:[
     {name:'Remada curvada', scheme:'4 x 8'},
     {name:'Serrote', scheme:'3 x 10'},
@@ -135,10 +141,86 @@ function todayISO(){
   return local.toISOString().slice(0,10);
 }
 
+function formatarData(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}`;
+}
+
+function generateId(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+}
+
+function getExercicios(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.exercicios)) || []; }catch(e){ return []; }
+}
+function getPlano(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.plano)) || { dias: [] }; }catch(e){ return { dias: [] }; }
+}
+function getLogs(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.logs)) || []; }catch(e){ return []; }
+}
+function salvarLogs(logs){ localStorage.setItem(STORAGE_KEYS.logs, JSON.stringify(logs)); }
+function nomeDoExercicio(exercicioId, exercicios){
+  const ex = exercicios.find(e => e.id === exercicioId);
+  return ex ? ex.nome : '(exercício removido)';
+}
+function garantirExercicioPorNome(nome, exercicios){
+  let ex = exercicios.find(e => e.nome === nome);
+  if(!ex){
+    ex = { id: generateId(), nome };
+    exercicios.push(ex);
+  }
+  return ex.id;
+}
+function parseScheme(scheme){
+  const m = /^(\d+)\s*x\s*(.+)$/i.exec(scheme || '');
+  if(!m) return { series:null, reps: scheme || null, descanso:null };
+  return { series: parseInt(m[1],10), reps: m[2].trim(), descanso:null };
+}
+
+function migrarDadosAntigos(){
+  if(localStorage.getItem(STORAGE_KEYS.migrado)) return;
+
+  const exercicios = [];
+
+  const dias = DIAS_SEED_MIGRACAO.map(d => ({
+    key: d.key,
+    label: d.label,
+    exercicios: d.exercises.map(ex => {
+      const exercicioId = garantirExercicioPorNome(ex.name, exercicios);
+      const parsed = parseScheme(ex.scheme);
+      return { exercicioId, series: parsed.series, reps: parsed.reps, descanso: parsed.descanso };
+    })
+  }));
+
+  const logs = [];
+  Object.keys(localStorage).forEach(k=>{
+    const m = /^session_([a-z]+)_(\d{4}-\d{2}-\d{2})$/.exec(k);
+    if(!m) return;
+    const data = m[2];
+    try{
+      const registro = JSON.parse(localStorage.getItem(k));
+      Object.keys(registro).forEach(nome=>{
+        const val = registro[nome];
+        if(!val || (!val.peso && !val.reps)) return;
+        const exercicioId = garantirExercicioPorNome(nome, exercicios);
+        logs.push({ id: generateId(), data, exercicioId, peso: val.peso || null, reps: val.reps || null });
+      });
+    }catch(e){}
+  });
+
+  localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+  localStorage.setItem(STORAGE_KEYS.plano, JSON.stringify({ dias }));
+  localStorage.setItem(STORAGE_KEYS.logs, JSON.stringify(logs));
+  localStorage.setItem(STORAGE_KEYS.migrado, '1');
+}
+
 function renderTabs(){
+  const plano = getPlano();
   const tabs = document.getElementById('tabs');
   tabs.innerHTML = '';
-  DAYS.forEach((d,i)=>{
+  plano.dias.forEach((d,i)=>{
     const el = document.createElement('div');
     el.className = 'tab' + (i===currentDayIdx ? ' active' : '');
     el.textContent = d.label;
@@ -147,42 +229,37 @@ function renderTabs(){
   });
 }
 
-async function renderCards(){
-  const day = DAYS[currentDayIdx];
-  document.getElementById('dayTitle').textContent = day.label;
+function renderCards(){
+  const plano = getPlano();
+  const exercicios = getExercicios();
+  const logs = getLogs();
+  const day = plano.dias[currentDayIdx];
   const container = document.getElementById('cards');
-  container.innerHTML = '<div class="empty">Carregando histórico...</div>';
 
-  let keys = [];
-  try{
-    keys = Object.keys(localStorage).filter(k => k.startsWith(`session_${day.key}_`));
-  }catch(e){ keys = []; }
-
-  keys.sort().reverse();
-  const recentKeys = keys.slice(0, 3);
-  let recentSessions = [];
-  for(const k of recentKeys){
-    try{
-      const raw = localStorage.getItem(k);
-      if(raw) recentSessions.push({date:k.split('_').pop(), data: JSON.parse(raw)});
-    }catch(e){}
+  if(!day){
+    document.getElementById('dayTitle').textContent = '—';
+    container.innerHTML = '<div class="empty">Nenhum dia configurado.</div>';
+    return;
   }
 
+  document.getElementById('dayTitle').textContent = day.label;
   container.innerHTML = '';
-  day.exercises.forEach((ex, idx)=>{
+
+  day.exercicios.forEach((item, idx)=>{
+    const nome = nomeDoExercicio(item.exercicioId, exercicios);
+    const historico = logs
+      .filter(l => l.exercicioId === item.exercicioId && l.peso)
+      .sort((a,b) => b.data.localeCompare(a.data));
+    const ultimo = historico[0];
+    const anteriores = historico.slice(1, 4);
+    const schemeTxt = `${item.series ?? '?'} x ${item.reps ?? '?'}` + (item.descanso ? ` · descanso ${item.descanso}` : '');
+
     const card = document.createElement('div');
     card.className = 'card';
-    const histBits = recentSessions
-      .map(s => {
-        const val = s.data[ex.name];
-        if(!val || !val.peso) return null;
-        const [y,m,d2] = s.date.split('-');
-        return `<span><b>${val.peso}kg</b> em ${d2}/${m}</span>`;
-      })
-      .filter(Boolean);
     card.innerHTML = `
-      <p class="ex-name">${ex.name}</p>
-      <p class="ex-scheme">${ex.scheme}</p>
+      <p class="ex-name">${nome}</p>
+      <p class="ex-scheme">${schemeTxt}</p>
+      ${ultimo ? `<div class="ultimo">Último: <b>${ultimo.peso}kg</b> (${formatarData(ultimo.data)})</div>` : ''}
       <div class="row">
         <div class="field">
           <label>Peso (kg)</label>
@@ -193,47 +270,50 @@ async function renderCards(){
           <input type="number" inputmode="numeric" id="reps_${idx}" placeholder="—">
         </div>
       </div>
-      ${histBits.length ? `<div class="hist">${histBits.join('')}</div>` : ''}
+      ${anteriores.length ? `<div class="hist">${anteriores.map(h=>`<span><b>${h.peso}kg</b> em ${formatarData(h.data)}</span>`).join('')}</div>` : ''}
     `;
     container.appendChild(card);
   });
 
-  await loadExistingForDate();
+  loadExistingForDate();
 }
 
-async function loadExistingForDate(){
-  const day = DAYS[currentDayIdx];
+function loadExistingForDate(){
+  const plano = getPlano();
+  const day = plano.dias[currentDayIdx];
+  if(!day) return;
   const date = document.getElementById('dateInput').value;
-  const key = `session_${day.key}_${date}`;
-  try{
-    const raw = localStorage.getItem(key);
-    if(raw){
-      const data = JSON.parse(raw);
-      day.exercises.forEach((ex, idx)=>{
-        const v = data[ex.name];
-        if(v){
-          if(v.peso) document.getElementById(`peso_${idx}`).value = v.peso;
-          if(v.reps) document.getElementById(`reps_${idx}`).value = v.reps;
-        }
-      });
-    }
-  }catch(e){}
+  const logs = getLogs();
+  day.exercicios.forEach((item, idx)=>{
+    const registro = logs.find(l => l.exercicioId === item.exercicioId && l.data === date);
+    const pesoEl = document.getElementById(`peso_${idx}`);
+    const repsEl = document.getElementById(`reps_${idx}`);
+    if(pesoEl) pesoEl.value = registro && registro.peso ? registro.peso : '';
+    if(repsEl) repsEl.value = registro && registro.reps ? registro.reps : '';
+  });
 }
 
-async function saveSession(){
-  const day = DAYS[currentDayIdx];
+function saveSession(){
+  const plano = getPlano();
+  const day = plano.dias[currentDayIdx];
   const date = document.getElementById('dateInput').value;
   if(!date){ showToast('Escolha uma data primeiro'); return; }
-  const data = {};
-  day.exercises.forEach((ex, idx)=>{
-    const peso = document.getElementById(`peso_${idx}`).value;
-    const reps = document.getElementById(`reps_${idx}`).value;
-    if(peso || reps) data[ex.name] = { peso: peso || null, reps: reps || null };
-  });
-  const key = `session_${day.key}_${date}`;
+  if(!day) return;
   const btn = document.getElementById('saveBtn');
   try{
-    localStorage.setItem(key, JSON.stringify(data));
+    let logs = getLogs();
+    day.exercicios.forEach((item, idx)=>{
+      const peso = document.getElementById(`peso_${idx}`).value;
+      const reps = document.getElementById(`reps_${idx}`).value;
+      const existenteIdx = logs.findIndex(l => l.exercicioId === item.exercicioId && l.data === date);
+      if(!peso && !reps){
+        if(existenteIdx !== -1) logs.splice(existenteIdx, 1);
+        return;
+      }
+      const registro = { id: existenteIdx !== -1 ? logs[existenteIdx].id : generateId(), data:date, exercicioId:item.exercicioId, peso: peso || null, reps: reps || null };
+      if(existenteIdx !== -1) logs[existenteIdx] = registro; else logs.push(registro);
+    });
+    salvarLogs(logs);
     btn.textContent = 'Salvo ✓';
     btn.classList.add('saved');
     showToast('Treino salvo');
@@ -244,21 +324,23 @@ async function saveSession(){
 }
 
 function resetDay(){
-  const day = DAYS[currentDayIdx];
-  day.exercises.forEach((ex, idx)=>{
+  const plano = getPlano();
+  const day = plano.dias[currentDayIdx];
+  if(!day) return;
+  day.exercicios.forEach((item, idx)=>{
     document.getElementById(`peso_${idx}`).value = '';
     document.getElementById(`reps_${idx}`).value = '';
   });
 }
 
 function exportData(){
-  const data = {};
-  Object.keys(localStorage).forEach(k=>{
-    if(k.startsWith('session_')){
-      try{ data[k] = JSON.parse(localStorage.getItem(k)); }catch(e){}
-    }
-  });
-  const backup = { app:'log-de-treino', exportedAt:new Date().toISOString(), data };
+  const backup = {
+    app:'log-de-treino',
+    exportedAt:new Date().toISOString(),
+    exercicios: getExercicios(),
+    plano: getPlano(),
+    logs: getLogs()
+  };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -279,21 +361,51 @@ function importData(event){
   reader.onload = () => {
     try{
       const parsed = JSON.parse(reader.result);
-      const incoming = parsed && parsed.data;
-      if(!incoming || typeof incoming !== 'object'){
-        showToast('Arquivo inválido');
-        return;
+      const exercicios = getExercicios();
+      let novosLogs = [];
+
+      if(parsed.data && typeof parsed.data === 'object'){
+        Object.keys(parsed.data).forEach(sessionKey=>{
+          const m = /^session_[a-z]+_(\d{4}-\d{2}-\d{2})$/.exec(sessionKey);
+          if(!m) return;
+          const data = m[1];
+          const registro = parsed.data[sessionKey];
+          Object.keys(registro).forEach(nome=>{
+            const val = registro[nome];
+            if(!val || (!val.peso && !val.reps)) return;
+            const exercicioId = garantirExercicioPorNome(nome, exercicios);
+            novosLogs.push({ id:generateId(), data, exercicioId, peso: val.peso || null, reps: val.reps || null });
+          });
+        });
       }
-      const keys = Object.keys(incoming).filter(k=>k.startsWith('session_'));
-      if(keys.length === 0){
+
+      if(Array.isArray(parsed.logs)){
+        (parsed.exercicios || []).forEach(ex=>{
+          if(!exercicios.find(e => e.id === ex.id)) exercicios.push(ex);
+        });
+        parsed.logs.forEach(l => novosLogs.push(l));
+      }
+
+      if(novosLogs.length === 0){
         showToast('Nenhum treino encontrado no arquivo');
         return;
       }
-      const ok = confirm(`Encontrados ${keys.length} treino(s) neste arquivo. Isso vai atualizar/adicionar esses treinos aos dados já salvos neste aparelho. Deseja continuar?`);
+
+      const ok = confirm(`Encontrados ${novosLogs.length} registro(s) neste arquivo. Isso vai atualizar/adicionar esses treinos aos dados já salvos neste aparelho. Deseja continuar?`);
       if(!ok) return;
-      keys.forEach(k=>{
-        localStorage.setItem(k, JSON.stringify(incoming[k]));
+
+      let logs = getLogs();
+      novosLogs.forEach(novo=>{
+        const i = logs.findIndex(l => l.exercicioId === novo.exercicioId && l.data === novo.data);
+        if(i !== -1) logs[i] = { ...logs[i], ...novo }; else logs.push(novo);
       });
+
+      localStorage.setItem(STORAGE_KEYS.exercicios, JSON.stringify(exercicios));
+      salvarLogs(logs);
+      if(parsed.plano && !localStorage.getItem(STORAGE_KEYS.plano)){
+        localStorage.setItem(STORAGE_KEYS.plano, JSON.stringify(parsed.plano));
+      }
+
       showToast('Dados importados');
       renderCards();
     }catch(e){
@@ -311,11 +423,12 @@ function showToast(msg){
   setTimeout(()=> t.classList.remove('show'), 1600);
 }
 
-async function init(){
+function init(){
   renderTabs();
-  await renderCards();
+  renderCards();
 }
 
+migrarDadosAntigos();
 document.getElementById('dateInput').value = todayISO();
 document.getElementById('dateInput').addEventListener('change', loadExistingForDate);
 init();
